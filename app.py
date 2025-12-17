@@ -1,5 +1,11 @@
-from flask import Flask, request
-from datetime import datetime
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Hola, mi app está en línea 🚀"
+
 
 app = Flask(__name__)
 
