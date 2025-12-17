@@ -1,10 +1,8 @@
-from flask import Flask, request
+from flask import Flask, request, redirect, url_for
 from datetime import datetime
 import uuid
 
 app = Flask(__name__)
-
-CLAVE_ADMIN = "RecibosJuanse2025"
 
 historial = []
 
@@ -19,12 +17,13 @@ ICONOS = {
     "Internet": "wifi"
 }
 
+CLAVE_ADMIN = "admin123"
+
+
 def formatear_pesos(valor):
     return f"{valor:,.0f}".replace(",", ".")
 
-# =====================
-# RUTA PRINCIPAL
-# =====================
+
 @app.route("/", methods=["GET", "POST"])
 def calcular():
     resultado = ""
@@ -38,14 +37,9 @@ def calcular():
         mes = request.form["mes"]
 
         valor = total / 6
-
-        historial.append({
-            "id": str(uuid.uuid4()),
-            "mes": mes,
-            "anio": anio_actual,
-            "tipo": tipo,
-            "total": total
-        })
+        tio = valor * 3
+        tia = valor * 2
+        juan = valor
 
         encabezado_resultado = f"""
         <div class="encabezado">
@@ -55,10 +49,18 @@ def calcular():
         """
 
         resultado = f"""
-        <p><b>Tío Román:</b> ${formatear_pesos(valor * 3)}</p>
-        <p><b>Tía Rocío:</b> ${formatear_pesos(valor * 2)}</p>
-        <p><b>Juan:</b> ${formatear_pesos(valor)}</p>
+        <p><b>Tío Román:</b> ${formatear_pesos(tio)}</p>
+        <p><b>Tía Rocío:</b> ${formatear_pesos(tia)}</p>
+        <p><b>Juan:</b> ${formatear_pesos(juan)}</p>
         """
+
+        historial.append({
+            "id": str(uuid.uuid4()),
+            "mes": mes,
+            "anio": anio_actual,
+            "tipo": tipo,
+            "total": total
+        })
 
         mensaje_guardado = "<p style='color:green'><b>Recibo guardado</b></p>"
 
@@ -68,24 +70,43 @@ def calcular():
             resumen.setdefault(h["mes"], [])
             resumen[h["mes"]].append(h)
 
-    historial_html = ""
+    historial_html = '<div class="historial-col">'
     for mes, registros in resumen.items():
-        historial_html += f"<div class='historial-card'><h4>{mes} {anio_actual}</h4>"
+        datos = {"Agua": 0, "Luz": 0, "Internet": 0}
+
+        for r in registros:
+            datos[r["tipo"]] += r["total"]
+
+        total_mes = sum(datos.values())
+        completos = all(v > 0 for v in datos.values())
+
+        historial_html += f"""
+        <div class="historial-card">
+            <h4>{mes} {anio_actual}</h4>
+            <p>💧 Agua: ${formatear_pesos(datos["Agua"])}</p>
+            <p>💡 Luz: ${formatear_pesos(datos["Luz"])}</p>
+            <p>🌐 Internet: ${formatear_pesos(datos["Internet"])}</p>
+        """
+
+        if completos:
+            historial_html += f"""
+            <p class="total-mes">
+                🧾 Total del mes: ${formatear_pesos(total_mes)}
+            </p>
+            """
 
         for r in registros:
             historial_html += f"""
-            <p>🧾 {r["tipo"]}: ${formatear_pesos(r["total"])}</p>
-
-            <form method="post" action="/borrar_registro" style="margin-bottom:10px">
-                <input type="hidden" name="id" value="{r["id"]}">
-                <input type="password" name="clave" placeholder="Clave admin" required>
-                <button style="background:#dc3545;font-size:14px">
-                    🗑️ Borrar este registro
-                </button>
+            <form method="post" action="/borrar" class="admin-form">
+                <input type="hidden" name="id" value="{r['id']}">
+                <input type="password" name="clave" class="admin-input" placeholder="Clave admin" required>
+                <button class="borrar-btn">🗑️ Borrar {r['tipo']}</button>
             </form>
             """
 
         historial_html += "</div>"
+
+    historial_html += "</div>"
 
     opciones_meses = "".join([f"<option value='{m}'>{m}</option>" for m in MESES])
 
@@ -94,8 +115,30 @@ def calcular():
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora Recibos</title>
+
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<script>
+function copiarResultado() {{
+    const texto = document.getElementById("resultado").innerText;
+    if (!texto.trim()) {{
+        alert("No hay resultado para copiar");
+        return;
+    }}
+    navigator.clipboard.writeText(texto)
+        .then(() => alert("Resultado copiado"));
+}}
+
+function limpiar() {{
+    document.querySelector("input[name='total']").value = "";
+    document.querySelector("select[name='tipo_recibo']").value = "Agua";
+    document.querySelector("select[name='mes']").value = "";
+    document.getElementById("resultado").innerHTML = "";
+}}
+</script>
+
 <style>
 body {{
     font-family: Arial;
@@ -121,39 +164,137 @@ body {{
     text-align: center;
 }}
 
+h2 {{ font-size: 26px; }}
+
+input, select, button {{
+    width: 100%;
+    padding: 14px;
+    margin-top: 12px;
+    font-size: 16px;
+    box-sizing: border-box;
+}}
+
+button {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 17px;
+}}
+
+.btn-blue {{ background: #007bff; }}
+.btn-gris {{ background: #6c757d; }}
+
+.material-icons {{
+    font-size: 22px;
+}}
+
+.encabezado {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}}
+
+.icono {{
+    font-size: 30px;
+    color: #007bff;
+}}
+
+#resultado p {{
+    font-size: 18px;
+    margin: 6px 0;
+}}
+
+.historial-col {{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}}
+
 .historial-card {{
     background: #fafafa;
     padding: 14px;
     border-radius: 10px;
-    margin-bottom: 15px;
+}}
+
+.total-mes {{
+    font-weight: bold;
+    margin-top: 10px;
+}}
+
+.borrar-btn {{
+    background: #dc3545;
+    margin-top: 6px;
+    padding: 8px;
+    font-size: 14px;
+}}
+
+.admin-input {{
+    margin-top: 6px;
+    padding: 8px;
+    font-size: 14px;
+}}
+
+@media (max-width:480px) {{
+    input, select, button {{
+        font-size: 18px;
+        padding: 16px;
+    }}
+
+    #resultado p {{
+        font-size: 20px;
+    }}
 }}
 </style>
 </head>
 
 <body>
+
 <div class="main">
 
 <div class="card">
 <h2>Calculadora Recibos</h2>
 
 <form method="post">
-    <input type="text" name="total" placeholder="Valor del recibo" required>
+    <input type="text" name="total" placeholder="Valor del recibo (ej: 75.500)" required>
+
     <select name="tipo_recibo">
-        <option value="Agua">Agua</option>
-        <option value="Luz">Luz</option>
-        <option value="Internet">Internet</option>
+        <option value="Agua">💧 Agua</option>
+        <option value="Luz">💡 Luz</option>
+        <option value="Internet">🌐 Internet</option>
     </select>
+
     <select name="mes" required>
         <option value="">Seleccione mes</option>
         {opciones_meses}
     </select>
-    <button type="submit">Calcular</button>
+
+    <button type="submit">
+        <span class="material-icons">calculate</span>
+        Calcular
+    </button>
 </form>
 
 {encabezado_resultado}
-{resultado}
-{mensaje_guardado}
+<div id="resultado">{resultado}</div>
 
+<button class="btn-blue" onclick="copiarResultado()">
+    <span class="material-icons">content_copy</span>
+    Copiar resultado
+</button>
+
+<button class="btn-gris" onclick="limpiar()">
+    <span class="material-icons">delete</span>
+    Limpiar
+</button>
+
+{mensaje_guardado}
 </div>
 
 <div class="card">
@@ -162,22 +303,24 @@ body {{
 </div>
 
 </div>
+
 </body>
 </html>
 """
 
-# =====================
-# BORRAR REGISTRO
-# =====================
-@app.route("/borrar_registro", methods=["POST"])
-def borrar_registro():
-    clave = request.form.get("clave")
-    registro_id = request.form.get("id")
 
-    if clave != CLAVE_ADMIN:
-        return "Acceso denegado ❌", 403
+@app.route("/borrar", methods=["POST"])
+def borrar():
+    clave = request.form["clave"]
+    id_registro = request.form["id"]
 
-    global historial
-    historial = [h for h in historial if h["id"] != registro_id]
+    if clave == CLAVE_ADMIN:
+        global historial
+        historial = [h for h in historial if h["id"] != id_registro]
 
-    return "<h3>Registro eliminado ✅</h3><a href='/'>Volver</a>"
+    return redirect(url_for("calcular"))
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
+
