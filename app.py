@@ -1,11 +1,5 @@
-from flask import Flask
-
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Hola, mi app está en línea 🚀"
-
+from flask import Flask, request
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -149,14 +143,11 @@ body {{
     text-align: center;
 }}
 
-h2 {{ font-size: 26px; }}
-
 input, select, button {{
     width: 100%;
     padding: 14px;
     margin-top: 12px;
     font-size: 16px;
-    box-sizing: border-box;
 }}
 
 button {{
@@ -167,16 +158,10 @@ button {{
     background: #28a745;
     color: white;
     border: none;
-    cursor: pointer;
-    font-size: 17px;
 }}
 
 .btn-blue {{ background: #007bff; }}
 .btn-gris {{ background: #6c757d; }}
-
-.material-icons {{
-    font-size: 22px;
-}}
 
 .encabezado {{
     display: flex;
@@ -185,49 +170,10 @@ button {{
     gap: 10px;
     margin-top: 20px;
 }}
-
-.icono {{
-    font-size: 30px;
-    color: #007bff;
-}}
-
-#resultado p {{
-    font-size: 18px;
-    margin: 6px 0;
-}}
-
-.historial-col {{
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}}
-
-.historial-card {{
-    background: #fafafa;
-    padding: 14px;
-    border-radius: 10px;
-}}
-
-.total-mes {{
-    font-weight: bold;
-    margin-top: 10px;
-}}
-
-@media (max-width:480px) {{
-    input, select, button {{
-        font-size: 18px;
-        padding: 16px;
-    }}
-
-    #resultado p {{
-        font-size: 20px;
-    }}
-}}
 </style>
 </head>
 
 <body>
-
 <div class="main">
 
 <div class="card">
@@ -247,24 +193,14 @@ button {{
         {opciones_meses}
     </select>
 
-    <button type="submit">
-        <span class="material-icons">calculate</span>
-        Calcular
-    </button>
+    <button type="submit">Calcular</button>
 </form>
 
 {encabezado_resultado}
 <div id="resultado">{resultado}</div>
 
-<button class="btn-blue" onclick="copiarResultado()">
-    <span class="material-icons">content_copy</span>
-    Copiar resultado
-</button>
-
-<button class="btn-gris" onclick="limpiar()">
-    <span class="material-icons">delete</span>
-    Limpiar
-</button>
+<button class="btn-blue" onclick="copiarResultado()">Copiar resultado</button>
+<button class="btn-gris" onclick="limpiar()">Limpiar</button>
 
 {mensaje_guardado}
 </div>
@@ -275,13 +211,14 @@ button {{
 </div>
 
 </div>
-
 </body>
 </html>
 """
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+# En Render NO es necesario app.run()
+# if __name__ == "__main__":
+#     app.run(host="0.0.0.0", port=10000)
+
 
 
 
