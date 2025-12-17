@@ -3,6 +3,11 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+# =====================
+# CONFIGURACIÓN ADMIN
+# =====================
+CLAVE_ADMIN = "RecibosJuanse2025"
+
 historial = []
 
 MESES = [
@@ -19,6 +24,9 @@ ICONOS = {
 def formatear_pesos(valor):
     return f"{valor:,.0f}".replace(",", ".")
 
+# =====================
+# RUTA PRINCIPAL
+# =====================
 @app.route("/", methods=["GET", "POST"])
 def calcular():
     resultado = ""
@@ -96,7 +104,6 @@ def calcular():
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora Recibos</title>
-
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 <script>
@@ -110,67 +117,10 @@ function copiarResultado() {{
         .then(() => alert("Resultado copiado"));
 }}
 
-function limpiar() {{
-    document.querySelector("input[name='total']").value = "";
-    document.querySelector("select[name='tipo_recibo']").value = "Agua";
-    document.querySelector("select[name='mes']").value = "";
-    document.getElementById("resultado").innerHTML = "";
+function confirmarBorrado() {{
+    return confirm("¿Seguro que deseas borrar TODO el historial?");
 }}
 </script>
-
-<style>
-body {{
-    font-family: Arial;
-    background: #f4f4f4;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
-}}
-
-.main {{
-    max-width: 420px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}}
-
-.card {{
-    background: white;
-    padding: 22px;
-    border-radius: 14px;
-    box-shadow: 0 0 12px rgba(0,0,0,0.12);
-    text-align: center;
-}}
-
-input, select, button {{
-    width: 100%;
-    padding: 14px;
-    margin-top: 12px;
-    font-size: 16px;
-}}
-
-button {{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: #28a745;
-    color: white;
-    border: none;
-}}
-
-.btn-blue {{ background: #007bff; }}
-.btn-gris {{ background: #6c757d; }}
-
-.encabezado {{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
-}}
-</style>
 </head>
 
 <body>
@@ -199,10 +149,18 @@ button {{
 {encabezado_resultado}
 <div id="resultado">{resultado}</div>
 
-<button class="btn-blue" onclick="copiarResultado()">Copiar resultado</button>
-<button class="btn-gris" onclick="limpiar()">Limpiar</button>
+<button onclick="copiarResultado()">Copiar resultado</button>
 
 {mensaje_guardado}
+
+<hr>
+
+<h4>Admin</h4>
+<form method="post" action="/borrar" onsubmit="return confirmarBorrado()">
+    <input type="password" name="clave" placeholder="Clave administrador" required>
+    <button style="background:#dc3545;color:white">Borrar historial</button>
+</form>
+
 </div>
 
 <div class="card">
@@ -215,12 +173,15 @@ button {{
 </html>
 """
 
-# En Render NO es necesario app.run()
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=10000)
+# =====================
+# RUTA BORRADO (ADMIN)
+# =====================
+@app.route("/borrar", methods=["POST"])
+def borrar_historial():
+    clave = request.form.get("clave")
 
+    if clave != CLAVE_ADMIN:
+        return "Acceso denegado ❌", 403
 
-
-
-
-
+    historial.clear()
+    return "<h2>Historial borrado correctamente ✅</h2><a href='/'>Volver</a>"
